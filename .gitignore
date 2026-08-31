@@ -1,0 +1,6 @@
+/build/
+/firmware/output/
+/.cache/
+*.pyc
+__pycache__/
+compile_commands.json

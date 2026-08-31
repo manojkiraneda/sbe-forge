@@ -1,0 +1,30 @@
+name: PPE42 toolchain and firmware
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Record LLVM revision
+        id: llvm-rev
+        run: echo "sha=$(git -C llvm-project rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache LLVM build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: llvm-${{ runner.os }}-${{ steps.llvm-rev.outputs.sha }}
+          restore-keys: |
+            llvm-${{ runner.os }}-
+
+      - name: Build and validate
+        run: ./scripts/dev.sh

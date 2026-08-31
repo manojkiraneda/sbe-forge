@@ -1,0 +1,1 @@
+option('app', type: 'string', value: 'all', description: 'Application under apps/, or all')

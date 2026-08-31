@@ -1,0 +1,4 @@
+[submodule "llvm-project"]
+	path = llvm-project
+	url = ../sbe-forge-llvm-project
+	branch = ppe42/llvm-21
