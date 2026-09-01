@@ -5,7 +5,7 @@
 #include <string.h>
 #include <sys/mman.h>
 
-#define OUTPUT_BUF_ADDR ((void *)(uintptr_t)0xFFF64000U)
+#define OUTPUT_BUF_ADDR ((void *)(uintptr_t)0xFFF88000U)
 #define OUTPUT_BUF_SIZE 0x4000U
 
 int main(void)

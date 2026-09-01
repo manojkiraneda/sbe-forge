@@ -37,7 +37,8 @@ meson compile -C output/meson-hellowitharguments
 ```
 
 The hello smoke test writes `Hello world` to the shared PPE42 output buffer at
-`0xFFF64000` without requiring a console device.
+`0xFFF88000` without requiring a console device. This matches the address used
+by the legacy `llvm-sbe` hello application.
 
 `printf` supports `%c`, `%d`, `%i`, `%s`, `%u`, `%x`, `%X`, and `%%`. Each call
 writes a NUL-terminated string to its own 8-byte-aligned slot in the 16 KiB

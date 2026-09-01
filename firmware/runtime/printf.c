@@ -5,9 +5,8 @@
 
 /*
  * PPE42 output buffer address derived from the shared memory map:
- * base   = SRAM_START          = 0xFFF60000
- * offset = 0x400 * 16          = 0x4000
- * addr   = SRAM_START + 0x4000 = 0xFFF64000
+ * This is the shared output address used by the legacy llvm-sbe hello app:
+ *   0xFFF84000 + (0x400 * 16) = 0xFFF88000
  *
  * Total buffer size = 0x400 * 16 = 0x4000 (16 KiB).
  *
@@ -15,8 +14,7 @@
  * to the next 8-byte (d-word) aligned offset so the next call starts on
  * a fresh aligned slot.
  */
-#define SRAM_START       0xFFF60000U
-#define OUTPUT_BUF_ADDR  (SRAM_START + (0x400U * 16U))
+#define OUTPUT_BUF_ADDR  0xFFF88000U
 #define OUTPUT_BUF_SIZE  (0x400U * 16U)
 #define DWORD_ALIGN      8U
 
