@@ -6,7 +6,13 @@ project(
 )
 
 fs = import('fs')
-app_names = ['hello', 'hellowitharguments']
+app_names = [
+  'hello',
+  'hellowitharguments',
+  'simple_test_assembly',
+  'test_c',
+  'test_c_register_pressure',
+]
 requested_app = get_option('app')
 if requested_app == 'all'
   apps_to_build = app_names
@@ -26,12 +32,21 @@ llvm_install_dir = meson.get_external_property('llvm_install_dir', '/opt/llvm-in
 ld_lld = find_program(llvm_install_dir / 'bin' / 'ld.lld')
 llvm_objcopy = find_program('llvm-objcopy')
 llvm_objdump = find_program('llvm-objdump')
-llvm_nm = find_program('llvm-nm')
+python = import('python').find_installation('python3')
+isa_checker = meson.project_source_root() / '..' / 'tools' / 'check_ppe42_disassembly.py'
+ppe42_disassemblies = []
 
 foreach app_name : apps_to_build
   app_dir = 'apps' / app_name
   if not fs.is_dir(app_dir)
     error('Missing application directory: ' + app_dir)
+  endif
+  if fs.is_file(app_dir / 'main.c')
+    app_source = files(app_dir / 'main.c')
+  elif fs.is_file(app_dir / 'main.s')
+    app_source = files(app_dir / 'main.s')
+  else
+    error('Missing main.c or main.s in application directory: ' + app_dir)
   endif
 
   firmware_objects = static_library(
@@ -39,7 +54,7 @@ foreach app_name : apps_to_build
     files('vectors.S'),
     files('startup.s'),
     runtime_sources,
-    files(app_dir / 'main.c'),
+    app_source,
     include_directories: sbe_include,
     pic: false,
     c_args: [
@@ -57,7 +72,7 @@ foreach app_name : apps_to_build
     output: app_name + '.elf',
     command: [
       ld_lld, '-T', linker_script, '--gc-sections',
-      '-Map', app_name + '.map', '--whole-archive', '@INPUT@',
+      '--whole-archive', '@INPUT@',
       '--no-whole-archive', '-o', '@OUTPUT@',
     ],
     depend_files: files('linker'),
@@ -71,7 +86,7 @@ foreach app_name : apps_to_build
     command: [llvm_objcopy, '-O', 'binary', '@INPUT@', '@OUTPUT@'],
     build_by_default: true,
   )
-  custom_target(
+  app_disassembly = custom_target(
     app_name + '-disassembly',
     input: firmware,
     output: app_name + '.dis',
@@ -79,14 +94,7 @@ foreach app_name : apps_to_build
     capture: true,
     build_by_default: true,
   )
-  custom_target(
-    app_name + '-symbols',
-    input: firmware,
-    output: app_name + '.symbols',
-    command: [llvm_nm, '-n', '@INPUT@'],
-    capture: true,
-    build_by_default: true,
-  )
+  ppe42_disassemblies += [app_disassembly]
 endforeach
 
 format_test = executable(
@@ -97,3 +105,9 @@ format_test = executable(
   native: true,
 )
 test('format', format_test)
+test(
+  'ppe42-isa',
+  python,
+  args: [isa_checker, '--variant', 'ppe42xm'] + ppe42_disassemblies,
+  depends: ppe42_disassemblies,
+)

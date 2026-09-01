@@ -38,7 +38,7 @@
 #define ADDR_G  0x50030ULL
 #define ADDR_H  0x50038ULL
 
-void pressure_test(void) {
+int main(void) {
     // -----------------------------------------------------------------------
     // Load 8 independent 64-bit values simultaneously.
     // Each occupies a VDR register pair.  With 8 live VDR values:

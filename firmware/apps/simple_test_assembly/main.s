@@ -1,7 +1,7 @@
 	.text
-	.globl	_start
-	.type	_start, @function
-_start:
+	.globl	main
+	.type	main, @function
+main:
 	# Load address 0x50009 into r3
 	lis	3, 5
 	ori	3, 3, 9
@@ -28,6 +28,6 @@ _start:
 .L_loop:
 	b	.L_loop
 
-	.size	_start, .-_start
+	.size	main, .-main
 
 # Made with Bob

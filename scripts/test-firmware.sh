@@ -22,6 +22,3 @@ else
 fi
 meson test -C "${build_dir}" --print-errorlogs
 meson compile -C "${build_dir}"
-
-python3 "${repo_root}/tools/check_ppe42_disassembly.py" --variant ppe42xm \
-  "${build_dir}"/*.dis

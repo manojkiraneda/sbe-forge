@@ -1,4 +1,4 @@
-// PPE42 64-bit OR and LI8_VDR test
+// PPE42 64-bit OR and LI8_VDR application test
 // Tests all OR optimization cases, and LI8_VDR immediate materialisation
 
 int main(void) {
