@@ -30,8 +30,8 @@ runtime_sources = files('runtime/printf.c')
 
 llvm_install_dir = meson.get_external_property('llvm_install_dir', '/opt/llvm-install')
 ld_lld = find_program(llvm_install_dir / 'bin' / 'ld.lld')
-llvm_objcopy = find_program('llvm-objcopy')
-llvm_objdump = find_program('llvm-objdump')
+llvm_objcopy = find_program(llvm_install_dir / 'bin' / 'llvm-objcopy')
+llvm_objdump = find_program(llvm_install_dir / 'bin' / 'llvm-objdump')
 python = import('python').find_installation('python3')
 isa_checker = meson.project_source_root() / '..' / 'tools' / 'check_ppe42_disassembly.py'
 ppe42_disassemblies = []
