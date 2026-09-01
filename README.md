@@ -33,7 +33,20 @@ git submodule update --init --recursive
 
 `scripts/dev.sh` builds a development container, compiles LLVM/Clang/LLD,
 builds the firmware applications, runs native tests, and validates every
-generated disassembly against the PPE42XM rules.
+generated disassembly against the PPE42XM rules. This source build is intended
+for compiler development and reproducibility checks.
+
+CI and application-only development consume the immutable compiler release in
+`toolchain.lock`:
+
+```sh
+./scripts/fetch-toolchain.sh
+./scripts/test-firmware.sh
+```
+
+The lock records the release, LLVM commit, asset name, and SHA-256 checksum.
+Candidate compiler changes are tested against this repository by the PPE42
+workflow in `sbe-forge-llvm-project` before they are tagged and published.
 
 ## Updating the compiler
 

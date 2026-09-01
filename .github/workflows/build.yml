@@ -1,4 +1,4 @@
-name: PPE42 toolchain and firmware
+name: PPE42 firmware
 
 on:
   push:
@@ -7,24 +7,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  applications:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install firmware build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build zstd
+
+      - name: Download locked PPE42 toolchain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/fetch-toolchain.sh
+
+      - name: Build and validate applications
+        run: ./scripts/test-firmware.sh
+
+  source-reproducibility:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      - name: Record LLVM revision
-        id: llvm-rev
-        run: echo "sha=$(git -C llvm-project rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache LLVM build
-        uses: actions/cache@v4
-        with:
-          path: build
-          key: llvm-${{ runner.os }}-${{ steps.llvm-rev.outputs.sha }}
-          restore-keys: |
-            llvm-${{ runner.os }}-
-
-      - name: Build and validate
+      - name: Build compiler and applications from source
         run: ./scripts/dev.sh
