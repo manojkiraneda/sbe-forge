@@ -26,7 +26,7 @@ sbe_include = include_directories('include')
 linker_script = meson.current_source_dir() / 'linker'
 
 # Add shared modules here. Applications remain isolated under apps/<name>.
-runtime_sources = files('runtime/format.c')
+runtime_sources = files('runtime/printf.c')
 
 llvm_install_dir = meson.get_external_property('llvm_install_dir', '/opt/llvm-install')
 ld_lld = find_program(llvm_install_dir / 'bin' / 'ld.lld')
@@ -97,14 +97,16 @@ foreach app_name : apps_to_build
   ppe42_disassemblies += [app_disassembly]
 endforeach
 
-format_test = executable(
-  'format-test',
+printf_test = executable(
+  'printf-test',
   runtime_sources,
-  files('tests/format_test.c'),
+  files('tests/printf_test.c'),
   include_directories: sbe_include,
+  c_args: ['-D_GNU_SOURCE', '-Dprintf=sbe_test_printf'],
   native: true,
 )
-test('format', format_test)
+test('printf', printf_test)
+
 test(
   'ppe42-isa',
   python,

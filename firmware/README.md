@@ -36,10 +36,10 @@ meson setup output/meson-hellowitharguments --cross-file cross/ppe42.ini \
 meson compile -C output/meson-hellowitharguments
 ```
 
-The hello smoke test copies `Hello world` into `sbe_test_output` and stores the
-snprintf return value in `sbe_test_output_length` without requiring a console
-device.
+The hello smoke test writes `Hello world` to the shared PPE42 output buffer at
+`0xFFF64000` without requiring a console device.
 
-`sbe_snprintf` and `sbe_vsnprintf` support `%c`, `%d`, `%i`, `%s`, `%u`, `%x`,
-`%X`, and `%%`. They return the full output length and always NUL-terminate a
-non-empty destination, including when the output is truncated.
+`printf` supports `%c`, `%d`, `%i`, `%s`, `%u`, `%x`, `%X`, and `%%`. Each call
+writes a NUL-terminated string to its own 8-byte-aligned slot in the 16 KiB
+shared output buffer. The module wraps back to the beginning when the buffer is
+exhausted.
