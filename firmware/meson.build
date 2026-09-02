@@ -13,6 +13,7 @@ app_names = [
   'test_c',
   'test_64bit_arithmetic',
   'test_64bit_integer_ops',
+  'test_division',
   'test_c_register_pressure',
 ]
 requested_app = get_option('app')
@@ -31,6 +32,7 @@ linker_script = meson.current_source_dir() / 'linker'
 runtime_sources = files('runtime/printf.c')
 
 llvm_install_dir = meson.get_external_property('llvm_install_dir', '/opt/llvm-install')
+ppe42_runtime = llvm_install_dir / 'lib' / 'ppe42' / 'libclang_rt.ppe42.a'
 ld_lld = find_program(llvm_install_dir / 'bin' / 'ld.lld')
 llvm_objcopy = find_program(llvm_install_dir / 'bin' / 'llvm-objcopy')
 llvm_objdump = find_program(llvm_install_dir / 'bin' / 'llvm-objdump')
@@ -110,7 +112,7 @@ foreach app_name : apps_to_build
     command: [
       ld_lld, '-T', linker_script, '--gc-sections',
       '--whole-archive', '@INPUT@',
-      '--no-whole-archive', '-o', '@OUTPUT@',
+      '--no-whole-archive', ppe42_runtime, '-o', '@OUTPUT@',
     ],
     depend_files: files('linker'),
     build_by_default: true,
