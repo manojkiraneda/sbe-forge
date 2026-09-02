@@ -12,6 +12,7 @@ app_names = [
   'simple_test_assembly',
   'test_c',
   'test_64bit_arithmetic',
+  'test_64bit_integer_ops',
   'test_c_register_pressure',
 ]
 requested_app = get_option('app')
