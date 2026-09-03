@@ -18,8 +18,11 @@ import html as html_mod
 # ---------------------------------------------------------------------------
 # Stage extraction
 # ---------------------------------------------------------------------------
-HEADER_RE = re.compile(
+LEGACY_HEADER_RE = re.compile(
     r'^(?:# )?\*\*\* IR Dump After (.+) \(([^)]+)\) \*\*\*:?$'
+)
+NEW_PM_HEADER_RE = re.compile(
+    r'^; \*\*\* IR Dump After (.+?) on (.+) \*\*\*:?$'
 )
 
 
@@ -33,7 +36,8 @@ def extract_stages(lines: List[str]) -> List[Tuple[str, str, str, List[str]]]:
 
     for raw in lines:
         line = raw.rstrip('\n')
-        m = HEADER_RE.match(line.strip()) or HEADER_RE.match(line)
+        m = (LEGACY_HEADER_RE.match(line.strip()) or
+             NEW_PM_HEADER_RE.match(line.strip()))
         if m:
             if current_header is not None:
                 stages.append((current_header, current_pass_name,

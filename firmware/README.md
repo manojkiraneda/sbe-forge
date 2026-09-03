@@ -28,6 +28,12 @@ The `ppe42-isa` Meson test validates every application disassembly with
 `tools/check_ppe42_disassembly.py`. Disassemblies are not printed during normal
 successful builds.
 
+Each application also produces a raw `.llvm-stages.txt` compiler pass dump and
+unified and side-by-side HTML reports. The reports show the exact line-level
+change between every consecutive LLVM IR and Machine IR stage. For the
+assembly-only `simple_test_assembly` image, the report covers its shared C
+runtime because the assembly source does not pass through LLVM IR.
+
 For example, build the formatted-arguments application with:
 
 ```sh
