@@ -25,13 +25,16 @@ jobs:
       - name: Build and validate applications
         run: ./scripts/test-firmware.sh
 
-      - name: Upload firmware binaries and disassemblies
+      - name: Upload firmware binaries, disassemblies, and compiler stages
         uses: actions/upload-artifact@v4
         with:
           name: ppe42-firmware-${{ github.sha }}
           path: |
             build/firmware/*.bin
             build/firmware/*.dis
+            build/firmware/*.llvm-stages.txt
+            build/firmware/*.llvm-stages_formatted.html
+            build/firmware/*.llvm-stages_sidebyside.html
           if-no-files-found: error
           compression-level: 9
           retention-days: 5
