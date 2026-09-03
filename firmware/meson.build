@@ -90,7 +90,10 @@ foreach app_name : apps_to_build
     app_name + '-disassembly',
     input: firmware,
     output: app_name + '.dis',
-    command: [llvm_objdump, '-S', '--mcpu=ppe42', '@INPUT@'],
+    command: [
+      llvm_objdump, '-S', '--mcpu=ppe42',
+      '-mllvm', '-ppc-asm-full-reg-names', '@INPUT@',
+    ],
     capture: true,
     build_by_default: true,
   )
