@@ -19,4 +19,25 @@ cmake -S "${repo_root}/llvm-project/llvm" -B "${build_dir}" -G Ninja \
 cmake --build "${build_dir}"
 cmake --install "${build_dir}"
 
+# The PPE42 builtins are maintained in compiler-rt, but compiler-rt is not
+# enabled as an LLVM runtime because its generic PowerPC target does not
+# describe the PPE42 ABI. Build the PPE42-specific assembly helpers directly
+# and install the archive at the location consumed by firmware/meson.build.
+runtime_build_dir="${build_dir}/ppe42-runtime"
+runtime_install_dir="${install_dir}/lib/ppe42"
+runtime_sources=(
+  "${repo_root}/llvm-project/compiler-rt/lib/builtins/ppc/ppe42-div32.S"
+  "${repo_root}/llvm-project/compiler-rt/lib/builtins/ppc/ppe42-div64.S"
+)
+runtime_objects=()
+mkdir -p "${runtime_build_dir}" "${runtime_install_dir}"
+for source in "${runtime_sources[@]}"; do
+  object="${runtime_build_dir}/$(basename "${source}" .S).o"
+  "${install_dir}/bin/clang" -target powerpc-unknown-elf -mcpu=ppe42 \
+    -msoft-float -ffreestanding -fno-builtin -c "${source}" -o "${object}"
+  runtime_objects+=("${object}")
+done
+"${install_dir}/bin/llvm-ar" rcs \
+  "${runtime_install_dir}/libclang_rt.ppe42.a" "${runtime_objects[@]}"
+
 echo "PPE42 LLVM installed in ${install_dir}"
