@@ -34,12 +34,14 @@ bdnz bdnza bdnzl bdnzla bdnzlr bdnzlrl bdz bdza bdzl bdzla bdzlr bdzlrl
 bf bfa bfctr bfctrl bfl bfla bflr bflrl
 bt bta btctr btctrl btl btla btlr btlrl
 bctr bctrl blr blrl
-lbz lbzu lbzux lbzx lha lhau lhaux lhax lhz lhzu lhzux lhzx
+lbz lbzu lbzux lbzx lha lhau lhaux lhax lhz lhzu lhzx
 lwbrx lwarx lwz lwzu lwzux lwzx
 stb stbu stbux stbx sth sthbrx sthu sthux sthx stw stwbrx stwcx. stwu stwux stwx
 lvd lvdu lvdx stvd stvdu stvdx lsku stsku
 mfcr mfmsr mfspr mftb mftbl mftbu mflr mfctr mfxer
+mfdec mfisr mfsrr0 mfsrr1 mtdec mtsrr0 mtsrr1
 mtcr0 mtcrf mtmsr mtspr mtlr mtctr mtxer rfi sync
+trap twu wrteei
 dcbf dcbi dcbq dcbt dcbz
 nop li lis mr not clrlwi clrrwi rotlwi rotrwi slwi srwi
 bng bnl bne bso bns bun bnbw bnbwl bnbwi bnbwil
