@@ -4,7 +4,7 @@ set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 image="sbe-forge-dev:latest"
 
-git -C "${repo_root}" submodule update --init --recursive --depth 1 --progress
+git -C "${repo_root}" submodule update --init --recursive --depth 1 --filter=blob:none --progress
 docker build -t "${image}" "${repo_root}"
 docker run --rm \
   --volume "${repo_root}:/workspace:Z" \
