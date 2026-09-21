@@ -15,7 +15,10 @@ jobs:
       - name: Install firmware build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y meson ninja-build zstd
+          sudo apt-get install -y meson ninja-build rustup zstd
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add powerpc-unknown-linux-gnu
 
       - name: Download locked PPE42 toolchain
         env:

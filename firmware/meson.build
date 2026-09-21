@@ -15,6 +15,7 @@ app_names = [
   'test_64bit_integer_ops',
   'test_division',
   'test_c_register_pressure',
+  'hello_rust',
 ]
 requested_app = get_option('app')
 if requested_app == 'all'
@@ -37,6 +38,7 @@ ld_lld = find_program(llvm_install_dir / 'bin' / 'ld.lld')
 llvm_objcopy = find_program(llvm_install_dir / 'bin' / 'llvm-objcopy')
 llvm_objdump = find_program(llvm_install_dir / 'bin' / 'llvm-objdump')
 clang = find_program(llvm_install_dir / 'bin' / 'clang')
+rustc = find_program('rustc', required: 'hello_rust' in apps_to_build)
 python = import('python').find_installation('python3')
 isa_checker = meson.project_source_root() / '..' / 'tools' / 'check_ppe42_disassembly.py'
 stage_capture = meson.project_source_root() / '..' / 'tools' / 'capture_llvm_stages.py'
@@ -47,7 +49,70 @@ foreach app_name : apps_to_build
   if not fs.is_dir(app_dir)
     error('Missing application directory: ' + app_dir)
   endif
-  if fs.is_file(app_dir / 'main.c')
+  if app_name == 'hello_rust'
+    rust_target = 'powerpc-unknown-linux-gnu'
+    rust_target_libdir = run_command(rustc, '--print', 'target-libdir', '--target', rust_target,
+      check: false).stdout().strip()
+    if not fs.is_dir(rust_target_libdir)
+      error('Rust target ' + rust_target + ' is required; install it with: rustup target add ' + rust_target)
+    endif
+
+    rust_ir = custom_target(
+      app_name + '-ir',
+      input: files(app_dir / 'main.rs'),
+      output: app_name + '.ll',
+      command: [
+        rustc, '--target', rust_target, '--edition=2021', '--crate-type=lib',
+        '--emit=llvm-ir', '-C', 'opt-level=2', '-C', 'panic=abort',
+        '-C', 'no-redzone=yes', '@INPUT@', '-o', '@OUTPUT@',
+      ],
+      build_by_default: true,
+    )
+    rust_ir_llvm21 = custom_target(
+      app_name + '-ir-llvm21',
+      input: rust_ir,
+      output: app_name + '-llvm21.ll',
+      command: [python, meson.project_source_root() / '..' / 'tools' / 'strip_llvm_memory_attrs.py',
+        '@INPUT@', '@OUTPUT@'],
+      depend_files: files('../tools/strip_llvm_memory_attrs.py'),
+      build_by_default: true,
+    )
+    rust_object = custom_target(
+      app_name + '-object',
+      input: rust_ir_llvm21,
+      output: app_name + '.o',
+      command: [clang, '-target', 'powerpc-unknown-elf', '-mcpu=ppe42', '-msoft-float',
+        '-O2', '-ffreestanding', '-fno-builtin', '-fno-stack-protector',
+        '-fno-unwind-tables', '-fno-asynchronous-unwind-tables', '-fno-exceptions',
+        '-ffunction-sections', '-fdata-sections', '-c', '@INPUT@', '-o', '@OUTPUT@'],
+      build_by_default: true,
+    )
+    rust_vectors = custom_target(
+      app_name + '-vectors', input: files('vectors.S'), output: app_name + '-vectors.o',
+      command: [clang, '-target', 'powerpc-unknown-elf', '-mcpu=ppe42', '-msoft-float',
+        '-ffreestanding', '-fno-builtin', '-c', '@INPUT@', '-o', '@OUTPUT@'],
+      build_by_default: true,
+    )
+    rust_startup = custom_target(
+      app_name + '-startup', input: files('startup.s'), output: app_name + '-startup.o',
+      command: [clang, '-target', 'powerpc-unknown-elf', '-mcpu=ppe42', '-msoft-float',
+        '-ffreestanding', '-fno-builtin', '-c', '@INPUT@', '-o', '@OUTPUT@'],
+      build_by_default: true,
+    )
+    firmware = custom_target(
+      app_name + '-elf', input: [rust_vectors, rust_startup, rust_object], output: app_name + '.elf',
+      command: [ld_lld, '-T', linker_script, '--gc-sections', '--whole-archive', '@INPUT@',
+        '--no-whole-archive', '-o', '@OUTPUT@'],
+      depend_files: files('linker'), build_by_default: true,
+    )
+    custom_target(app_name + '-binary', input: firmware, output: app_name + '.bin',
+      command: [llvm_objcopy, '-O', 'binary', '@INPUT@', '@OUTPUT@'], build_by_default: true)
+    app_disassembly = custom_target(app_name + '-disassembly', input: firmware, output: app_name + '.dis',
+      command: [llvm_objdump, '-S', '--mcpu=ppe42', '-mllvm', '-ppc-asm-full-reg-names', '@INPUT@'],
+      capture: true, build_by_default: true)
+    ppe42_disassemblies += [app_disassembly]
+    continue
+  elif fs.is_file(app_dir / 'main.c')
     app_source = files(app_dir / 'main.c')
   elif fs.is_file(app_dir / 'main.s')
     app_source = files(app_dir / 'main.s')
