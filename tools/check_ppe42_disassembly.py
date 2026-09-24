@@ -34,10 +34,10 @@ bdnz bdnza bdnzl bdnzla bdnzlr bdnzlrl bdz bdza bdzl bdzla bdzlr bdzlrl
 bf bfa bfctr bfctrl bfl bfla bflr bflrl
 bt bta btctr btctrl btl btla btlr btlrl
 bctr bctrl blr blrl
-lbz lbzu lbzux lbzx lha lhau lhaux lhax lhz lhzu lhzx
-lwbrx lwarx lwz lwzu lwzux lwzx
-stb stbu stbux stbx sth sthbrx sthu sthux sthx stw stwbrx stwcx. stwu stwux stwx
-lvd lvdu lvdx stvd stvdu stvdx lsku stsku
+lbz lbzu lbzx lha lhau lhax lhz lhzu lhzx
+lwbrx lwarx lwz lwzu lwzx
+stb stbu stbx sth sthbrx sthu sthx stw stwbrx stwcx. stwu stwx
+lvd lvdx stvd stvdx lsku stsku
 mfcr mfmsr mfspr mftb mftbl mftbu mflr mfctr mfxer
 mfdec mfisr mfsrr0 mfsrr1 mtdec mtsrr0 mtsrr1
 mtcr0 mtcrf mtmsr mtspr mtlr mtctr mtxer rfi sync
@@ -56,7 +56,7 @@ bwgez bwgezl bwgtz bwgtzl bwlez bwlezl bwltz bwltzl bwnz bwnzl bwz bwzl
 """)
 PPE42X_ADDITIONS = mnemonic_set("""
 mulli mullw mullw. mullwo mullwo. rldicl rldicl. rldicr rldicr.
-rldimi rldimi. slvd srvd
+rldimi rldimi. slvd srvd dcbqlvd lvd lvdu lvdx stvd stvdu stvdx
 """)
 PPE42XM_ADDITIONS = mnemonic_set("mulhw mulhw. mulhwu mulhwu.")
 
