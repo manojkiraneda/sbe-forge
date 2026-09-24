@@ -29,6 +29,8 @@ sub sub. subc subc. subf subf. subfc subfc. subfco subfco.
 subfe subfe. subfeo subfeo. subfic subfme subfme. subfmeo subfmeo.
 subfze subfze. subfzeo subfzeo. mullhw mullhw. mullhwu mullhwu.
 cmpw cmpwi cmplw cmplwi
+cmplwblt cmplwble cmplwbgt cmplwbeq cmplwbne cmplwbge
+cmplwbltl cmplwblel cmplwbgtl cmplwbgel cmplwbeql cmplwbnel
 b ba bl bla bc bca bcl bcla bcctr bcctrl bclr bclrl
 bdnz bdnza bdnzl bdnzla bdnzlr bdnzlrl bdz bdza bdzl bdzla bdzlr bdzlrl
 bf bfa bfctr bfctrl bfl bfla bflr bflrl
@@ -37,14 +39,14 @@ bctr bctrl blr blrl
 lbz lbzu lbzx lha lhau lhax lhz lhzu lhzx
 lwbrx lwarx lwz lwzu lwzx
 stb stbu stbx sth sthbrx sthu sthx stw stwbrx stwcx. stwu stwx
-lvd lvdx stvd stvdx lsku stsku
+lcxu stcxu lvd lvdx stvd stvdx lsku stsku
 mfcr mfmsr mfspr mftb mftbl mftbu mflr mfctr mfxer
 mfdec mfisr mfsrr0 mfsrr1 mtdec mtsrr0 mtsrr1
-mtcr0 mtcrf mtmsr mtspr mtlr mtctr mtxer rfi sync
+mtcr0 mtcrf mtmsr mtspr mtlr mtctr mtxer mtdacr mtdbcr rfi sync
 trap twu wrteei
 dcbf dcbi dcbq dcbt dcbz
-nop li lis mr not clrlwi clrrwi rotlwi rotrwi slwi srwi
-bng bnl bne bso bns bun bnbw bnbwl bnbwi bnbwil
+nop li lis mr not clrlwi clrrwi rotlwi rotrwi rotlw slwi srwi andi andis
+bng bnl bne bso bns bun bnbw bnbwl bnbwi bnbwil bb0wi bb0wil bb1wi bb1wil
 clrbw. clrbwi. clrbwbc clrbwbcl clrbwibc clrbwibcl
 clrbwbz clrbwbzl clrbwbnz clrbwbnzl clrbwibz clrbwibzl clrbwibnz clrbwibnzl
 cmplwbc cmplwbcl cmpwbc cmpwbcl cmpwibc cmpwibcl
@@ -74,6 +76,9 @@ DENYLIST_REASONS = {
     "mtocrf": "bit 11 form is unsupported; use legacy mtcrf 128, RS (mtcr0)",
     "mulli": "PPE42X/PPE42XM instruction, not base PPE42",
     "mulhwu": "PPE42XM instruction, not base PPE42 or PPE42X",
+    **{name: "PPE42 omits update-indexed load/store forms" for name in mnemonic_set(
+        "lbzux lhaux lhzux lwzux stbux sthux stwux")},
+    "rotldi": "64-bit rotate-immediate instruction is not implemented by PPE42",
 }
 
 
