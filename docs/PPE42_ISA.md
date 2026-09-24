@@ -235,10 +235,10 @@ bdnz bdnza bdnzl bdnzla bdnzlr bdnzlrl bdz bdza bdzl bdzla bdzlr bdzlrl
 bf bfa bfctr bfctrl bfl bfla bflr bflrl
 bt bta btctr btctrl btl btla btlr btlrl
 bctr bctrl blr blrl
-lbz lbzu lbzux lbzx lha lhau lhaux lhax lhz lhzu lhzux lhzx
-lwbrx lwarx lwz lwzu lwzux lwzx
-stb stbu stbux stbx sth sthbrx sthu sthux sthx stw stwbrx stwcx. stwu stwux stwx
-lvd lvdu lvdx stvd stvdu stvdx lsku stsku
+lbz lbzu lbzx lha lhau lhax lhz lhzu lhzx
+lwbrx lwarx lwz lwzu lwzx
+stb stbu stbx sth sthbrx sthu sthx stw stwbrx stwcx. stwu stwx
+lvd lvdx stvd stvdx lsku stsku
 mfcr mfmsr mfspr mftb mftbl mftbu mflr mfctr mfxer
 mtcr0 mtcrf mtmsr mtspr mtlr mtctr mtxer rfi sync
 dcbf dcbi dcbq dcbt dcbz
