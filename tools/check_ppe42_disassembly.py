@@ -40,10 +40,10 @@ lbz lbzu lbzx lha lhau lhax lhz lhzu lhzx
 lwbrx lwarx lwz lwzu lwzx
 stb stbu stbx sth sthbrx sthu sthx stw stwbrx stwcx. stwu stwx
 lcxu stcxu lvd lvdx stvd stvdx lsku stsku
-mfcr mfmsr mfspr mftb mftbl mftbu mflr mfctr mfxer
+mfcr mfmsr mfspr mftb mftbl mftbu mflr mfctr mfxer mfpvr mfedr
 mfdec mfisr mfsrr0 mfsrr1 mtdec mtsrr0 mtsrr1
-mtcr0 mtcrf mtmsr mtspr mtlr mtctr mtxer mtdacr mtdbcr rfi sync
-trap twu wrteei
+mtcr0 mtcrf mtmsr mtspr mtlr mtctr mtxer mtdacr mtdbcr mttcr rfi sync
+trap tw twu wrteei
 dcbf dcbi dcbq dcbt dcbz
 nop li lis mr not clrlwi clrrwi rotlwi rotrwi rotlw slwi srwi andi andis
 bng bnl bne bso bns bun bnbw bnbwl bnbwi bnbwil bb0wi bb0wil bb1wi bb1wil
