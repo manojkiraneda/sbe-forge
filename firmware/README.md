@@ -70,3 +70,28 @@ these attributes do not affect program behavior.
 writes a NUL-terminated string to its own 8-byte-aligned slot in the 16 KiB
 shared output buffer. The module wraps back to the beginning when the buffer is
 exhausted.
+
+## Stack instruction code generation probe
+
+`apps/test_stack_ops` contains `ppe42_stack_outer`, a small nonleaf function
+with no local stack slots. With a compiler containing the `stsku`/`lsku` frame
+lowering changes, its prologue and epilogue should use those instructions.
+The app writes `15` to the first word of the shared output buffer at
+`0xFFF88000` when run.
+
+Build and check only this app with a toolchain containing those changes:
+
+```sh
+cd firmware
+toolchain_dir=/path/to/updated/ppe42/toolchain
+mkdir -p ../build
+sed "s#/opt/llvm-install#${toolchain_dir}#g" cross/ppe42.ini > ../build/ppe42-stack.ini
+meson setup ../build/firmware-stack-ops --cross-file ../build/ppe42-stack.ini -Dapp=test_stack_ops
+meson test -C ../build/firmware-stack-ops --print-errorlogs
+rg -n 'ppe42_stack_outer|stsku|lsku' ../build/firmware-stack-ops/test_stack_ops.dis
+```
+
+The `ppe42-stack-ops` Meson test checks `ppe42_stack_outer` for a matching
+`stsku`/`lsku` pair around its call. The pinned release toolchain may predate
+these instructions, so point `toolchain_dir` at a build containing the LLVM
+changes in PR #43.
