@@ -79,19 +79,16 @@ lowering changes, its prologue and epilogue should use those instructions.
 The app writes `15` to the first word of the shared output buffer at
 `0xFFF88000` when run.
 
-Build and check only this app with a toolchain containing those changes:
+The downloaded toolchain at `../artifacts/ppe42-toolchain` contains LLVM PR
+#43 (`llvm_ref: 43/merge` in its manifest). From the `sbe-forge` directory,
+build and check only this app with:
 
 ```sh
-cd firmware
-toolchain_dir=/path/to/updated/ppe42/toolchain
-mkdir -p ../build
-sed "s#/opt/llvm-install#${toolchain_dir}#g" cross/ppe42.ini > ../build/ppe42-stack.ini
-meson setup ../build/firmware-stack-ops --cross-file ../build/ppe42-stack.ini -Dapp=test_stack_ops
-meson test -C ../build/firmware-stack-ops --print-errorlogs
-rg -n 'ppe42_stack_outer|stsku|lsku' ../build/firmware-stack-ops/test_stack_ops.dis
+./scripts/test-stack-ops.sh
+rg -n 'ppe42_stack_outer|stsku|lsku' build/firmware-stack-ops/test_stack_ops.dis
 ```
 
 The `ppe42-stack-ops` Meson test checks `ppe42_stack_outer` for a matching
-`stsku`/`lsku` pair around its call. The pinned release toolchain may predate
-these instructions, so point `toolchain_dir` at a build containing the LLVM
-changes in PR #43.
+`stsku`/`lsku` pair around its call. Set `SBE_LLVM_INSTALL_DIR` if the toolchain
+is elsewhere. The script also runs the PPE42 ISA check and produces the ELF,
+flat binary, disassembly, and LLVM pipeline report for this app.
