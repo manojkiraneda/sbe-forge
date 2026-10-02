@@ -74,10 +74,14 @@ exhausted.
 ## Stack instruction code generation probe
 
 `apps/test_stack_ops` contains `ppe42_stack_outer`, a small nonleaf function
-with no local stack slots. With a compiler containing the `stsku`/`lsku` frame
-lowering changes, its prologue and epilogue should use those instructions.
-The app writes `15` to the first word of the shared output buffer at
-`0xFFF88000` when run.
+that clobbers R30 without using local stack slots. With a compiler containing
+the R28–R31 callee-save selection change, its prologue and epilogue should use
+`stsku` and `lsku`. `ppe42_stack_plain` has the same call shape without a
+callee-saved GPR and should keep the ordinary stack sequence. A compiler built
+from the earlier revision of PR #43 uses the ordinary sequence for the R30
+probe and the stack pair for the plain function, so the test detects that
+older behavior. The app writes `15` and `16` to the first two words of the
+shared output buffer at `0xFFF88000` when run.
 
 The downloaded toolchain at `../artifacts/ppe42-toolchain` contains LLVM PR
 #43 (`llvm_ref: 43/merge` in its manifest). From the `sbe-forge` directory,
@@ -89,6 +93,7 @@ rg -n 'ppe42_stack_outer|stsku|lsku' build/firmware-stack-ops/test_stack_ops.dis
 ```
 
 The `ppe42-stack-ops` Meson test checks `ppe42_stack_outer` for a matching
-`stsku`/`lsku` pair around its call. Set `SBE_LLVM_INSTALL_DIR` if the toolchain
+`stsku`/`lsku` pair and checks that `ppe42_stack_plain` has neither instruction.
+Set `SBE_LLVM_INSTALL_DIR` if the toolchain
 is elsewhere. The script also runs the PPE42 ISA check and produces the ELF,
 flat binary, disassembly, and LLVM pipeline report for this app.

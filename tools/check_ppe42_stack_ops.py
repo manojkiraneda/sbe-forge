@@ -13,18 +13,20 @@ STACK_OPERAND = re.compile(r"^r1,\s*([+-]?\d+)\(r1\)$")
 
 
 def main(path: Path) -> int:
-    in_outer = False
-    instructions: list[tuple[str, str]] = []
+    functions: dict[str, list[tuple[str, str]]] = {}
+    current: str | None = None
     for line in path.read_text().splitlines():
         if match := FUNCTION.match(line):
-            if in_outer:
-                break
-            in_outer = match.group(1) == "ppe42_stack_outer"
-        elif in_outer and (match := INSTRUCTION.match(line)):
-            instructions.append((match.group(1), match.group(2).strip()))
+            current = match.group(1)
+            functions[current] = []
+        elif current and (match := INSTRUCTION.match(line)):
+            functions[current].append((match.group(1), match.group(2).strip()))
 
-    if not instructions:
-        print(f"{path}: ppe42_stack_outer was not found", file=sys.stderr)
+    instructions = functions.get("ppe42_stack_outer", [])
+    plain = functions.get("ppe42_stack_plain", [])
+    if not instructions or not plain:
+        print(f"{path}: one or both stack probe functions were not found",
+              file=sys.stderr)
         return 1
 
     saves = [(index, operands) for index, (name, operands) in enumerate(instructions)
@@ -53,7 +55,14 @@ def main(path: Path) -> int:
               "ppe42_stack_outer", file=sys.stderr)
         return 1
 
+    plain_names = [name for name, _ in plain]
+    if any(name in {"stsku", "lsku"} for name in plain_names) or "stwu" not in plain_names:
+        print(f"{path}: ppe42_stack_plain must use the ordinary stack sequence",
+              file=sys.stderr)
+        return 1
+
     print(f"ppe42_stack_outer: stsku {save_operands}; lsku {restore_operands}")
+    print("ppe42_stack_plain: ordinary stack sequence")
     return 0
 
 
