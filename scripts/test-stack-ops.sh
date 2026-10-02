@@ -3,6 +3,7 @@ set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 toolchain_dir="${SBE_LLVM_INSTALL_DIR:-${repo_root}/../artifacts/ppe42-toolchain}"
+toolchain_dir="$(realpath "${toolchain_dir}")"
 cross_file="${repo_root}/build/ppe42-stack.ini"
 
 for program in clang ld.lld llvm-ar llvm-objcopy llvm-objdump; do

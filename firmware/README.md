@@ -83,12 +83,14 @@ probe and the stack pair for the plain function, so the test detects that
 older behavior. The app writes `15` and `16` to the first two words of the
 shared output buffer at `0xFFF88000` when run.
 
-The downloaded toolchain at `../artifacts/ppe42-toolchain` contains LLVM PR
-#43 (`llvm_ref: 43/merge` in its manifest). From the `sbe-forge` directory,
-build and check only this app with:
+The package at `../artifacts/ppe42-toolchain` was built before the R28–R31
+selection change and will fail this policy check. The corrected PR #43 package
+is at `../artifacts/pr43-policy-download/ppe42-toolchain` in this workspace.
+From the `sbe-forge` directory, build and check only this app with:
 
 ```sh
-./scripts/test-stack-ops.sh
+SBE_LLVM_INSTALL_DIR=../artifacts/pr43-policy-download/ppe42-toolchain \
+  ./scripts/test-stack-ops.sh
 ```
 
 The `ppe42-stack-ops` Meson test checks `ppe42_stack_outer` for a matching
