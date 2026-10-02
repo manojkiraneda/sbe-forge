@@ -20,7 +20,7 @@ app_names = [
 requested_app = get_option('app')
 if requested_app == 'all'
   apps_to_build = app_names
-elif requested_app in app_names
+elif requested_app in app_names or requested_app == 'test_stack_ops'
   apps_to_build = [requested_app]
 else
   error('Unknown application: ' + requested_app)
@@ -202,6 +202,15 @@ foreach app_name : apps_to_build
     build_by_default: true,
   )
   ppe42_disassemblies += [app_disassembly]
+  if app_name == 'test_stack_ops'
+    test(
+      'ppe42-stack-ops',
+      python,
+      args: [meson.project_source_root() / '..' / 'tools' / 'check_ppe42_stack_ops.py',
+        app_disassembly],
+      depends: app_disassembly,
+    )
+  endif
 endforeach
 
 printf_test = executable(

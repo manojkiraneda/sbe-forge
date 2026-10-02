@@ -70,3 +70,33 @@ these attributes do not affect program behavior.
 writes a NUL-terminated string to its own 8-byte-aligned slot in the 16 KiB
 shared output buffer. The module wraps back to the beginning when the buffer is
 exhausted.
+
+## Stack instruction code generation probe
+
+`apps/test_stack_ops` contains `ppe42_stack_outer`, a small nonleaf function
+that clobbers R30 without using local stack slots. With a compiler containing
+the R28–R31 callee-save selection change, its prologue and epilogue should use
+`stsku` and `lsku`. `ppe42_stack_plain` has the same call shape without a
+callee-saved GPR and should keep the ordinary stack sequence. A compiler built
+from the earlier revision of PR #43 uses the ordinary sequence for the R30
+probe and the stack pair for the plain function, so the test detects that
+older behavior. The app writes `15` and `16` to the first two words of the
+shared output buffer at `0xFFF88000` when run.
+
+The package at `../artifacts/ppe42-toolchain` was built before the R28–R31
+selection change and will fail this policy check. The corrected PR #43 package
+is at `../artifacts/pr43-policy-download/ppe42-toolchain` in this workspace.
+From the `sbe-forge` directory, build and check only this app with:
+
+```sh
+SBE_LLVM_INSTALL_DIR=../artifacts/pr43-policy-download/ppe42-toolchain \
+  ./scripts/test-stack-ops.sh
+```
+
+The `ppe42-stack-ops` Meson test checks `ppe42_stack_outer` for a matching
+`stsku`/`lsku` pair and checks that `ppe42_stack_plain` has neither instruction.
+Set `SBE_LLVM_INSTALL_DIR` if the toolchain
+is elsewhere. The script also runs the PPE42 ISA check and produces the ELF,
+flat binary, disassembly, and LLVM pipeline report for this app. It prints the
+output paths, and uses a distinct Meson build directory for each compiler
+binary so a newly downloaded toolchain is compiled from scratch.
