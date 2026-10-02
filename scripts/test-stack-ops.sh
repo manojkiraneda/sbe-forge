@@ -3,7 +3,6 @@ set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 toolchain_dir="${SBE_LLVM_INSTALL_DIR:-${repo_root}/../artifacts/ppe42-toolchain}"
-build_dir="${repo_root}/build/firmware-stack-ops"
 cross_file="${repo_root}/build/ppe42-stack.ini"
 
 for program in clang ld.lld llvm-ar llvm-objcopy llvm-objdump; do
@@ -16,6 +15,11 @@ if [[ ! -f "${toolchain_dir}/lib/ppe42/libclang_rt.ppe42.a" ]]; then
   echo "Missing PPE42 runtime in ${toolchain_dir}" >&2
   exit 1
 fi
+
+# Meson caches the compiler path and Ninja does not rebuild source merely
+# because the binary at that path changed. Give each compiler its own build.
+toolchain_id="$(sha256sum "${toolchain_dir}/bin/clang" | cut -c1-12)"
+build_dir="${repo_root}/build/firmware-stack-ops-${toolchain_id}"
 
 mkdir -p "${repo_root}/build"
 sed "s#/opt/llvm-install#${toolchain_dir}#g" \

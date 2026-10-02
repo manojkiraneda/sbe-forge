@@ -89,11 +89,12 @@ build and check only this app with:
 
 ```sh
 ./scripts/test-stack-ops.sh
-rg -n 'ppe42_stack_outer|stsku|lsku' build/firmware-stack-ops/test_stack_ops.dis
 ```
 
 The `ppe42-stack-ops` Meson test checks `ppe42_stack_outer` for a matching
 `stsku`/`lsku` pair and checks that `ppe42_stack_plain` has neither instruction.
 Set `SBE_LLVM_INSTALL_DIR` if the toolchain
 is elsewhere. The script also runs the PPE42 ISA check and produces the ELF,
-flat binary, disassembly, and LLVM pipeline report for this app.
+flat binary, disassembly, and LLVM pipeline report for this app. It prints the
+output paths, and uses a distinct Meson build directory for each compiler
+binary so a newly downloaded toolchain is compiled from scratch.
