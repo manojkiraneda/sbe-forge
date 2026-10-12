@@ -1,6 +1,6 @@
 repository=manojkiraneda/sbe-forge-llvm-project
-version=ppe42-toolchain-v0.1.5
-llvm_sha=9e8a3de57989159892436d6b826d391f90098fdd
+version=ppe42-toolchain-v0.1.7
+llvm_sha=5fa9ce5d9fabd41cf629ce9ec229803047a4f909
 platform=linux-x86_64
 asset=sbe-ppe42-toolchain-linux-x86_64.tar.zst
-sha256=9cb8a2458a3dbead25df8ce787ae492a546439f020f419f0f211ae78bcea9202
+sha256=7ffedacbd9340ece07091dd371275515a541eb2bc2b0f2385c0ae897a748458a
