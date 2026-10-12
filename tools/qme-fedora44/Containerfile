@@ -1,0 +1,16 @@
+FROM registry.fedoraproject.org/fedora-minimal:44
+
+# HostFW needs the native build tools; the PPE compiler comes from the release.
+RUN dnf -y install --setopt=install_weak_deps=False \
+      bash bc ca-certificates curl diffutils file findutils gcc gcc-c++ \
+      git lsb_release make openssh-clients patch perl python3 tar which zstd \
+    && dnf clean all
+
+COPY build-qme.sh /usr/local/bin/build-qme
+RUN chmod 0755 /usr/local/bin/build-qme
+
+ENV LANG=C.UTF-8 \
+    CTEPATH=/opt/cte \
+    PPETOOLS=/opt/ppe42-toolchain
+WORKDIR /work
+ENTRYPOINT ["/usr/local/bin/build-qme"]
