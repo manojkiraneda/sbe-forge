@@ -20,7 +20,7 @@ Then supply an output directory and the addresses of `__pk_current_thread` and
 `__pk_priority_map` from the running firmware's matching `.syms` file:
 
 ```text
-simics> make-sppe-core workspace = "/path/to/sppe-core" current_thread = 0xfffcec38 priority_map = 0xfffcec60
+simics> make-sppe-core workspace = "/path/to/dump/sppe-core" current_thread = 0xfffcec38 priority_map = 0xfffcec60
 ```
 
 These example addresses are build-specific. Look up yours with:
