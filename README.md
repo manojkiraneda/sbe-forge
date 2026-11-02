@@ -13,6 +13,7 @@ contains no patch-application or LLVM source-download machinery.
 llvm-project/   PPE42 LLVM fork, pinned as a Git submodule
 firmware/       startup, runtime, applications, and native tests
 tools/          disassembly and compiler-debug analysis tools
+coredump/       Simics SPPE core capture script and LLDB instructions
 docs/           PPE42 ISA notes and backend documentation
 scripts/        reproducible build and validation entry points
 ```
@@ -56,3 +57,6 @@ Never copy backend changes into this repository as patch files.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the release and upstream-update
 workflow.
+
+See [coredump/README.md](coredump/README.md) for capturing Odyssey SPPE cores
+from Simics and inspecting PK threads with LLDB.
