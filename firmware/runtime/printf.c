@@ -14,7 +14,13 @@
  * to the next 8-byte (d-word) aligned offset so the next call starts on
  * a fresh aligned slot.
  */
+#ifdef SBE_PRINTF_TEST
+/* Native tests use host storage; macOS arm64 protects the low 4 GiB. */
+extern char sbe_test_output_buffer[];
+#define OUTPUT_BUF_ADDR  sbe_test_output_buffer
+#else
 #define OUTPUT_BUF_ADDR  0xFFF88000U
+#endif
 #define OUTPUT_BUF_SIZE  (0x400U * 16U)
 #define DWORD_ALIGN      8U
 

@@ -209,7 +209,7 @@ printf_test = executable(
   runtime_sources,
   files('tests/printf_test.c'),
   include_directories: sbe_include,
-  c_args: ['-D_GNU_SOURCE', '-Dprintf=sbe_test_printf'],
+  c_args: ['-DSBE_PRINTF_TEST', '-Dprintf=sbe_test_printf'],
   native: true,
 )
 test('printf', printf_test)
