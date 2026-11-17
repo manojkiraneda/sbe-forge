@@ -1,20 +1,15 @@
 #include "sbe/printf.h"
 
 #include <assert.h>
-#include <stdint.h>
 #include <string.h>
-#include <sys/mman.h>
 
-#define OUTPUT_BUF_ADDR ((void *)(uintptr_t)0xFFF88000U)
 #define OUTPUT_BUF_SIZE 0x4000U
+
+char sbe_test_output_buffer[OUTPUT_BUF_SIZE];
 
 int main(void)
 {
-    char *buffer = mmap(OUTPUT_BUF_ADDR, OUTPUT_BUF_SIZE,
-                        PROT_READ | PROT_WRITE,
-                        MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-
-    assert(buffer == OUTPUT_BUF_ADDR);
+    char *buffer = sbe_test_output_buffer;
 
     assert(printf("Hello world") == 11);
     assert(strcmp(buffer, "Hello world") == 0);
@@ -28,6 +23,5 @@ int main(void)
     assert(printf("%x %X %c %% %s", 0x1a2bU, 0x1a2bU, 'A', NULL) == 20);
     assert(strcmp(buffer + 64, "1a2b 1A2B A % (null)") == 0);
 
-    assert(munmap(buffer, OUTPUT_BUF_SIZE) == 0);
     return 0;
 }
