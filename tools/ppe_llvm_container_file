@@ -1,0 +1,50 @@
+FROM registry.fedoraproject.org/fedora-minimal:45
+
+# HostFW needs the native build tools; the PPE compiler comes from the release.
+RUN dnf -y install --setopt=install_weak_deps=False \
+      bash bc ca-certificates curl diffutils file findutils \
+      git lsb_release make openssh-clients patch perl python3 tar which zstd \
+      glibc-devel rsync\
+    && dnf clean all
+
+# PPE42 toolchain: the native-arch artifact of a GitHub Actions run of
+# TOOLCHAIN_REPO. Artifacts need authentication, so the github.com token is
+# passed as the build secret 'gh_token' (podman build --secret id=gh_token,...);
+# it is only mounted for this RUN and never stored in the image.
+# TARGETARCH (arm64/amd64) is set automatically from --platform.
+ARG TARGETARCH
+ARG TOOLCHAIN_REPO=manojkiraneda/sbe-forge-llvm-project
+ARG TOOLCHAIN_RUN_ID=44236356991
+RUN --mount=type=secret,id=gh_token \
+    set -euo pipefail; \
+    case "${TARGETARCH}" in \
+        arm64) arch=aarch64 ;; \
+        amd64) arch=x86_64 ;; \
+        *) echo "Unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    api="https://api.github.com/repos/${TOOLCHAIN_REPO}"; \
+    auth="Authorization: Bearer $(cat /run/secrets/gh_token)"; \
+    echo "Toolchain: ${TOOLCHAIN_REPO} run ${TOOLCHAIN_RUN_ID} linux-${arch}"; \
+    url=$(curl --fail --silent --show-error --location --retry 3 -H "${auth}" \
+            "${api}/actions/runs/${TOOLCHAIN_RUN_ID}/artifacts?per_page=100" \
+        | python3 -c "import json,sys; print(next(a['archive_download_url'] for a in json.load(sys.stdin)['artifacts'] if a['name'].startswith(sys.argv[1])))" \
+            "sbe-ppe42-toolchain-linux-${arch}-"); \
+    mkdir /tmp/toolchain; \
+    curl --fail --show-error --location --retry 3 --progress-bar -H "${auth}" \
+        -o /tmp/toolchain/artifact.zip "${url}"; \
+    python3 -m zipfile -e /tmp/toolchain/artifact.zip /tmp/toolchain; \
+    cd /tmp/toolchain; \
+    sha256sum --check sbe-ppe42-toolchain-linux-*.tar.zst.sha256; \
+    tar --zstd -xf sbe-ppe42-toolchain-linux-*.tar.zst -C /opt; \
+    test -x /opt/ppe42-toolchain/bin/clang; \
+    cd /; rm -rf /tmp/toolchain; \
+    mkdir -p /workspace/build; \
+    ln -sfn /opt/ppe42-toolchain /workspace/build/llvm
+
+ENV LANG=C.UTF-8 \
+    CTEPATH=/opt/cte \
+    PPETOOLS=/opt/ppe42-toolchain \
+    PATH=/opt/ppe42-toolchain/bin:/usr/local/bin:/usr/bin \
+    LD_LIBRARY_PATH=/opt/ppe42-toolchain/lib
+WORKDIR /work
+ENTRYPOINT ["/work"]
