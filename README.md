@@ -32,7 +32,7 @@ If the repository was cloned without submodules:
 git submodule update --init --recursive
 ```
 
-`scripts/dev.sh` builds a development container, compiles LLVM/Clang/LLD,
+`scripts/dev.sh` builds a development container, compiles LLVM/Clang/LLD/LLDB with the embedded MLGO inliner,
 builds the firmware applications, runs native tests, and validates every
 generated disassembly against the PPE42XM rules. This source build is intended
 for compiler development and reproducibility checks.
@@ -60,3 +60,17 @@ workflow.
 
 See [coredump/README.md](coredump/README.md) for capturing Odyssey SPPE cores
 from Simics and inspecting PK threads with LLDB.
+
+The development container and LLVM release CI use the same build driver,
+`llvm-project/utils/ppe42/build-toolchain.sh`. The container uses Fedora 45 and
+Python 3.11; it caches TensorFlow AOT dependencies and the checksum-verified
+inliner model in an image layer. Compiler objects remain in `build/llvm` and
+the release-layout toolchain is staged in `build/toolchain`.
+
+For native builds, install Python 3.11, run the shared driver with `deps` to
+install host dependencies, then run `./scripts/build-llvm.sh`. The default
+build includes an MLGO compilation smoke check and produces a toolchain archive.
+`SBE_LLVM_BUILD_DIR`, `SBE_LLVM_INSTALL_DIR` and `SBE_LLVM_DEPS_DIR` override
+the build, staging and dependency directories. Individual phases are listed by
+`./scripts/build-llvm.sh --help`. Build configuration changes belong in the
+shared driver; updating the LLVM submodule brings them into this repository.
