@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Test shared build delegation
+        run: python3 -m unittest discover -s tests -p test_build_llvm_wrapper.py -v
+
       - name: Install firmware build dependencies
         run: |
           sudo apt-get update
