@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Test shared build delegation
-        run: python3 -m unittest discover -s tests -p test_build_llvm_wrapper.py -v
+        run: python3 -m unittest discover -s tests -p 'test_*build*.py' -v
 
       - name: Install firmware build dependencies
         run: |
@@ -29,7 +29,7 @@ jobs:
         run: ./scripts/fetch-toolchain.sh
 
       - name: Build and validate applications
-        run: ./scripts/test-firmware.sh
+        run: ./scripts/dev.sh --native --phase firmware
 
       - name: Upload firmware binaries, disassemblies, and compiler stages
         uses: actions/upload-artifact@v4
