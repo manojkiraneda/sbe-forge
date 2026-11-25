@@ -60,3 +60,41 @@ workflow.
 
 See [coredump/README.md](coredump/README.md) for capturing Odyssey SPPE cores
 from Simics and inspecting PK threads with LLDB.
+
+### Development entry point
+
+`dev.sh` is the common entry point for local builds and LLVM toolchain CI.
+The default runs in Fedora; `--native` uses the current host, including macOS.
+The full build compiles/packages the toolchain and then tests firmware:
+
+```sh
+./scripts/dev.sh
+./scripts/dev.sh --native
+```
+
+Native hosts need the dependencies installed first (`--native --phase deps`)
+and Python 3.11 for MLGO. Run one phase while iterating, or use an existing
+compiler for firmware-only testing:
+
+```sh
+./scripts/dev.sh --native --phase configure -- -DCMAKE_VERBOSE_MAKEFILE=ON
+./scripts/dev.sh --native --phase build
+./scripts/dev.sh --native --phase runtime
+./scripts/dev.sh --native --phase stage
+./scripts/dev.sh --native --phase check
+./scripts/dev.sh --native --phase firmware
+```
+
+`--llvm-source /path/to/llvm-project` selects a candidate checkout without
+updating its submodule or switching its revision. `--build-dir` and
+`--install-dir` select the compiler build tree and staged toolchain. Existing
+`SBE_LLVM_*` overrides still work. Relative paths are resolved from the calling
+directory. `--engine podman` selects a different container engine.
+
+LLVM CI calls the native phases around its existing caches and compiler
+regression checks, then runs the container `check` phase on Linux x86 to validate
+the development image and packaged compiler together without rebuilding LLVM.
+The command-routing tests cover native and container modes, phase selection,
+path overrides, failure propagation and compiler-before-firmware ordering.
+After updating a pinned submodule revision, run
+`git submodule update --init --recursive` before the development build.

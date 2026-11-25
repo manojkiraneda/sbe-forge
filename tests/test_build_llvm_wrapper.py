@@ -25,6 +25,7 @@ sys.exit(17)
 ''')
             driver.chmod(0o755)
             env = dict(os.environ)
+            env.pop('SBE_LLVM_SOURCE_DIR', None)
             env.pop('SBE_LLVM_BUILD_DIR', None)
             env.pop('SBE_LLVM_INSTALL_DIR', None)
             result = subprocess.run(['bash', str(root / 'scripts/build-llvm.sh'), 'configure',
