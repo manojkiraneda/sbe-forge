@@ -32,22 +32,67 @@ If the repository was cloned without submodules:
 git submodule update --init --recursive
 ```
 
-`scripts/dev.sh` builds a development container, compiles LLVM/Clang/LLD/LLDB with the embedded MLGO inliner,
-builds the firmware applications, runs native tests, and validates every
-generated disassembly against the PPE42XM rules. This source build is intended
-for compiler development and reproducibility checks.
+`dev.sh` is the common build-and-test entry point used locally and by LLVM CI.
+Its default container build installs dependencies, builds Clang/LLD/LLDB with
+MLGO, runs the compiler regressions, stages and checks the toolchain, creates
+an archive, and builds/tests firmware and its generated disassembly.
 
-CI and application-only development consume the immutable compiler release in
-`toolchain.lock`:
+TensorFlow is installed in a cached base-image layer. Model download/extraction
+is a later layer; a failure there preserves the installed TensorFlow wheel.
+Compiler/model script changes do not invalidate the stable dependency layers.
+Preparation also validates and reuses an installed TensorFlow version instead
+of running pip again. Container ccache data persists under the selected compiler
+build directory.
+
+### Native builds and individual phases
+
+Use `--native` on a configured host, including macOS. Native hosts need Python
+3.11 and the build dependencies; `--native --phase deps` installs the supported
+host dependencies. The default container supplies these automatically.
 
 ```sh
-./scripts/fetch-toolchain.sh
-./scripts/test-firmware.sh
+./scripts/dev.sh --native
+./scripts/dev.sh --native --phase test
+./scripts/dev.sh --native --phase configure -- -DCMAKE_VERBOSE_MAKEFILE=ON
+./scripts/dev.sh --native --phase build
+./scripts/dev.sh --native --phase test-compiler
+./scripts/dev.sh --native --phase test-package
+./scripts/dev.sh --native --phase firmware
 ```
 
-The lock records the release, LLVM commit, asset name, and SHA-256 checksum.
-Candidate compiler changes are tested against this repository by the PPE42
-workflow in `sbe-forge-llvm-project` before they are tagged and published.
+The `test` phase reruns the entry-point, compiler, package and firmware checks
+against an existing build. The complete `all` phase runs these around the build
+steps in dependency order. Additional phases include `prepare-tensorflow`,
+`prepare-model`, `runtime`, `stage`, `check`, `archive`, `host`, `cache-start`
+and `cache-report`; see `./scripts/dev.sh --help` for the full list.
+
+`--llvm-source /path/to/llvm-project` selects an existing candidate checkout
+without updating its submodule or switching its revision. `--build-dir` and
+`--install-dir` override the compiler build tree and staged toolchain.
+`SBE_LLVM_*` overrides remain supported; relative paths use the calling
+directory. `--engine podman` selects another container engine. Use separate
+build directories when switching between native and container environments.
+
+### Application-only development
+
+Use the immutable release in `toolchain.lock` to test applications without
+building the compiler:
+
+```sh
+./scripts/dev.sh --native --phase fetch
+./scripts/dev.sh --native --phase firmware
+```
+
+The lock records the release, compiler commit, asset and SHA-256 checksum.
+
+### CI responsibilities
+
+LLVM CI calls `dev.sh` phases for dependency preparation, configuration, build,
+regression tests, packaging and firmware validation. Test lists and fixtures
+live in the shared LLVM scripts, so local `all`/`test` uses the same checks.
+CI retains runner selection, checkouts, cache restore/save, artifact upload,
+attestation and tagged release publication. Linux x86 also runs the actual
+container `check` phase against the staged candidate without rebuilding LLVM.
 
 ## Updating the compiler
 
@@ -60,41 +105,3 @@ workflow.
 
 See [coredump/README.md](coredump/README.md) for capturing Odyssey SPPE cores
 from Simics and inspecting PK threads with LLDB.
-
-### Development entry point
-
-`dev.sh` is the common entry point for local builds and LLVM toolchain CI.
-The default runs in Fedora; `--native` uses the current host, including macOS.
-The full build compiles/packages the toolchain and then tests firmware:
-
-```sh
-./scripts/dev.sh
-./scripts/dev.sh --native
-```
-
-Native hosts need the dependencies installed first (`--native --phase deps`)
-and Python 3.11 for MLGO. Run one phase while iterating, or use an existing
-compiler for firmware-only testing:
-
-```sh
-./scripts/dev.sh --native --phase configure -- -DCMAKE_VERBOSE_MAKEFILE=ON
-./scripts/dev.sh --native --phase build
-./scripts/dev.sh --native --phase runtime
-./scripts/dev.sh --native --phase stage
-./scripts/dev.sh --native --phase check
-./scripts/dev.sh --native --phase firmware
-```
-
-`--llvm-source /path/to/llvm-project` selects a candidate checkout without
-updating its submodule or switching its revision. `--build-dir` and
-`--install-dir` select the compiler build tree and staged toolchain. Existing
-`SBE_LLVM_*` overrides still work. Relative paths are resolved from the calling
-directory. `--engine podman` selects a different container engine.
-
-LLVM CI calls the native phases around its existing caches and compiler
-regression checks, then runs the container `check` phase on Linux x86 to validate
-the development image and packaged compiler together without rebuilding LLVM.
-The command-routing tests cover native and container modes, phase selection,
-path overrides, failure propagation and compiler-before-firmware ordering.
-After updating a pinned submodule revision, run
-`git submodule update --init --recursive` before the development build.

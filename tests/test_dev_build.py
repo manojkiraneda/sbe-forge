@@ -25,24 +25,32 @@ class DevelopmentBuildTest(unittest.TestCase):
         self.source = self.root / 'candidate llvm'
         driver = self.source / 'utils/ppe42/build-toolchain.sh'
         driver.parent.mkdir(parents=True)
+        (driver.parent / 'toolchain-environment.sh').write_text('initialize() { :; }\n')
+        (driver.parent / 'toolchain-environment.sh').chmod(0o755)
         body = '''import json, os, sys
 with open(os.environ['RECORD'], 'a') as log:
     log.write(json.dumps({'kind': KIND, 'args': sys.argv[1:],
                           'source': os.environ.get('SBE_LLVM_SOURCE_DIR'),
                           'build': os.environ.get('SBE_LLVM_BUILD_DIR'),
-                          'install': os.environ.get('SBE_LLVM_INSTALL_DIR')}) + '\\n')
+                          'install': os.environ.get('SBE_LLVM_INSTALL_DIR'),
+                          'expected_arch': os.environ.get('SBE_LLVM_EXPECTED_ARCH'),
+                          'host_environment': os.environ.get('PPE42_TEST_ENVIRONMENT')}) + '\\n')
 sys.exit(int(os.environ.get('FAIL_CODE', '0')) if KIND == 'driver' else 0)
 '''
         self.program(driver, "KIND='driver'\n" + body)
         self.program(self.forge / 'scripts/test-firmware.sh', "KIND='firmware'\n" + body)
+        self.program(self.forge / 'scripts/fetch-toolchain.sh', "KIND='fetch'\n" + body)
         self.bin = self.root / 'bin'
         self.bin.mkdir()
+        self.program(self.bin / 'python3', "KIND='entry-tests'\n" + body)
         self.program(self.bin / 'git', "raise SystemExit('Candidate checkout must not be updated')\n")
         self.program(self.bin / 'docker', '''import json, os, pathlib, sys
 args = sys.argv[1:]
 if args[0] == 'build':
     driver = pathlib.Path(args[-1]) / 'llvm-project/utils/ppe42/build-toolchain.sh'
     assert driver.read_text() == pathlib.Path(os.environ['EXPECTED_DRIVER']).read_text()
+    assert (driver.parent / 'toolchain-environment.sh').read_text() == 'initialize() { :; }\\n'
+    assert os.access(driver.parent / 'toolchain-environment.sh', os.X_OK)
 with open(os.environ['RECORD'], 'a') as log:
     log.write(json.dumps({'kind': 'docker', 'args': args}) + '\\n')
 ''')
@@ -68,16 +76,20 @@ with open(os.environ['RECORD'], 'a') as log:
 
     def test_all_runs_compiler_then_firmware(self):
         events = self.native('--', '-DTEST_FLAG=a b')
-        self.assertEqual([e['kind'] for e in events], ['driver', 'firmware'])
-        self.assertEqual(events[0]['args'], ['all', '-DTEST_FLAG=a b'])
-        self.assertEqual(events[1]['install'], str(self.forge / 'build/toolchain'))
+        self.assertEqual([e['kind'] for e in events], ['entry-tests', 'driver', 'firmware'])
+        self.assertEqual(events[1]['args'], ['all', '-DTEST_FLAG=a b'])
+        self.assertEqual(events[2]['install'], str(self.forge / 'build/toolchain'))
 
     def test_each_compiler_phase_uses_candidate_without_submodule_update(self):
-        for phase in ('deps', 'prepare', 'configure', 'build-deps', 'build', 'runtime', 'stage', 'check', 'archive'):
+        for phase in ('deps', 'prepare', 'prepare-tensorflow', 'prepare-model', 'configure', 'build-deps', 'build', 'runtime', 'stage', 'check', 'archive', 'test-unit', 'test-compiler', 'test-package', 'host', 'cache-start', 'cache-report'):
             with self.subTest(phase=phase):
                 events = self.native('--phase', phase)
                 self.assertEqual(events[-1]['args'], [phase])
                 self.assertEqual(events[-1]['source'], str(self.source))
+
+    def test_release_fetch_does_not_require_an_llvm_checkout(self):
+        events = self.run_dev('--native', '--phase', 'fetch')
+        self.assertEqual([e['kind'] for e in events], ['fetch'])
 
     def test_firmware_does_not_require_llvm_sources(self):
         self.assertEqual([e['kind'] for e in self.run_dev('--native', '--phase', 'firmware')], ['firmware'])
@@ -97,9 +109,29 @@ with open(os.environ['RECORD'], 'a') as log:
         self.assertIn(expected + ':' + expected + ':Z', run)
         self.assertEqual(run[run.index('--build-dir') + 1], expected)
 
+    def test_test_phase_runs_entry_compiler_package_and_firmware_checks(self):
+        events = self.native('--phase', 'test')
+        self.assertEqual([e['kind'] for e in events], ['entry-tests', 'driver', 'firmware'])
+        self.assertEqual(events[1]['args'], ['test'])
+
+    def test_entry_tests_do_not_require_an_llvm_checkout(self):
+        events = self.run_dev('--native', '--phase', 'test-entrypoint')
+        self.assertEqual([e['kind'] for e in events], ['entry-tests'])
+
+    def test_expected_architecture_is_forwarded(self):
+        events = self.native('--phase', 'host', '--expect-arch', 'arm64')
+        self.assertEqual(events[0]['expected_arch'], 'arm64')
+
+    def test_entry_and_firmware_checks_load_the_shared_environment(self):
+        helper = self.source / 'utils/ppe42/toolchain-environment.sh'
+        helper.write_text('initialize() { export PPE42_TEST_ENVIRONMENT=loaded; }\n')
+        events = self.native()
+        self.assertEqual(events[0]['host_environment'], 'loaded')
+        self.assertEqual(events[-1]['host_environment'], 'loaded')
+
     def test_failure_stops_before_firmware(self):
         events = self.native(extra_env={'FAIL_CODE': '19'}, expect=19)
-        self.assertEqual([e['kind'] for e in events], ['driver'])
+        self.assertEqual([e['kind'] for e in events], ['entry-tests', 'driver'])
 
     def test_container_builds_selected_driver_and_calls_native_dev(self):
         events = self.run_dev('--llvm-source', str(self.source), '--phase', 'check')
@@ -111,6 +143,7 @@ with open(os.environ['RECORD'], 'a') as log:
         self.assertEqual(run[run.index('--phase') + 1], 'check')
         self.assertEqual(run[run.index('--install-dir') + 1], '/workspace/build/toolchain')
         self.assertIn('--native', run)
+        self.assertIn('CCACHE_DIR=/workspace/build/llvm/ccache', run)
 
     def test_invalid_arguments_fail_before_build(self):
         for args in (('--phase', 'invalid'), ('--phase',), ('--bogus',), ('--phase', 'check', '--', '-DFOO=ON')):
