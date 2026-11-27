@@ -18,7 +18,7 @@ Usage: scripts/dev.sh [options] [-- CMake arguments]
   --native                 Run directly on the host (default: container)
   --container              Run in the Fedora development container
   --phase PHASE            all (default), deps, prepare, prepare-tensorflow,
-                           prepare-model, configure, build-deps, build, runtime,
+                           prepare-model, configure, build-deps, build, build-test, runtime,
                            stage, check, test, test-entrypoint, test-unit,
                            test-compiler, test-package, firmware, fetch, host,
                            cache-start, cache-report, or archive
@@ -34,7 +34,7 @@ The all phase builds the compiler, runs the same compiler/package regressions
 as CI, packages it, then builds/tests firmware. The test phase reruns checks
 against an existing compiler build and staged toolchain.
 Existing SBE_LLVM_* overrides are supported. BUILD_DIR and PACKAGE_DIR are
-accepted for CI. CMake arguments are accepted with all or configure only.
+accepted for CI. CMake arguments are accepted with all, build-test or configure only.
 HELP
 }
 while (( $# )); do
@@ -59,11 +59,11 @@ while (( $# )); do
   esac
 done
 case "$phase" in
-  all|deps|prepare|prepare-tensorflow|prepare-model|configure|build-deps|build|runtime|stage|check|archive|firmware|fetch|test|test-entrypoint|test-unit|test-compiler|test-package|host|cache-start|cache-report) ;;
+  all|deps|prepare|prepare-tensorflow|prepare-model|configure|build-deps|build|build-test|runtime|stage|check|archive|firmware|fetch|test|test-entrypoint|test-unit|test-compiler|test-package|host|cache-start|cache-report) ;;
   *) echo "Unknown phase: $phase" >&2; exit 2;;
 esac
-if (( cmake_arg_count )) && [[ "$phase" != all && "$phase" != configure ]]; then
-  echo 'CMake arguments require --phase all or --phase configure' >&2; exit 2
+if (( cmake_arg_count )) && [[ "$phase" != all && "$phase" != build-test && "$phase" != configure ]]; then
+  echo 'CMake arguments require --phase all, --phase build-test or --phase configure' >&2; exit 2
 fi
 # Resolve overrides before either script changes directory. Keep identical paths
 # inside containers so compiler caches and user-selected outputs remain usable.
@@ -122,8 +122,11 @@ if [[ "$mode" == native ]]; then
     exit
   elif [[ "$phase" == all || "$phase" == test ]]; then
     test_entrypoint
-    "$repo_root/scripts/build-llvm.sh" "$phase" ${cmake_args[@]+"${cmake_args[@]}"}
+    driver_phase="$phase"
+    if [[ "$phase" == all ]]; then driver_phase=build-test; fi
+    "$repo_root/scripts/build-llvm.sh" "$driver_phase" ${cmake_args[@]+"${cmake_args[@]}"}
     test_firmware
+    if [[ "$phase" == all ]]; then exec "$repo_root/scripts/build-llvm.sh" archive; fi
     exit
   elif [[ "$phase" == firmware ]]; then
     test_firmware

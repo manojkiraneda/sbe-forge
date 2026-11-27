@@ -34,8 +34,9 @@ git submodule update --init --recursive
 
 `dev.sh` is the common build-and-test entry point used locally and by LLVM CI.
 Its default container build installs dependencies, builds Clang/LLD/LLDB with
-MLGO, runs the compiler regressions, stages and checks the toolchain, creates
-an archive, and builds/tests firmware and its generated disassembly.
+MLGO, runs the compiler regressions, stages and checks the toolchain, builds/tests
+firmware and its disassembly, then creates the archive only after validation
+succeeds.
 
 TensorFlow is installed in a cached base-image layer. Model download/extraction
 is a later layer; a failure there preserves the installed TensorFlow wheel.
