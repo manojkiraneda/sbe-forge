@@ -35,7 +35,8 @@ with open(os.environ['RECORD'], 'a') as log:
                           'install': os.environ.get('SBE_LLVM_INSTALL_DIR'),
                           'expected_arch': os.environ.get('SBE_LLVM_EXPECTED_ARCH'),
                           'host_environment': os.environ.get('PPE42_TEST_ENVIRONMENT')}) + '\\n')
-sys.exit(int(os.environ.get('FAIL_CODE', '0')) if KIND == 'driver' else 0)
+sys.exit(int(os.environ.get('FAIL_CODE', '0')) if KIND == 'driver' else
+         int(os.environ.get('FAIL_FIRMWARE', '0')) if KIND == 'firmware' else 0)
 '''
         self.program(driver, "KIND='driver'\n" + body)
         self.program(self.forge / 'scripts/test-firmware.sh', "KIND='firmware'\n" + body)
@@ -76,12 +77,13 @@ with open(os.environ['RECORD'], 'a') as log:
 
     def test_all_runs_compiler_then_firmware(self):
         events = self.native('--', '-DTEST_FLAG=a b')
-        self.assertEqual([e['kind'] for e in events], ['entry-tests', 'driver', 'firmware'])
-        self.assertEqual(events[1]['args'], ['all', '-DTEST_FLAG=a b'])
+        self.assertEqual([e['kind'] for e in events], ['entry-tests', 'driver', 'firmware', 'driver'])
+        self.assertEqual(events[1]['args'], ['build-test', '-DTEST_FLAG=a b'])
         self.assertEqual(events[2]['install'], str(self.forge / 'build/toolchain'))
+        self.assertEqual(events[3]['args'], ['archive'])
 
     def test_each_compiler_phase_uses_candidate_without_submodule_update(self):
-        for phase in ('deps', 'prepare', 'prepare-tensorflow', 'prepare-model', 'configure', 'build-deps', 'build', 'runtime', 'stage', 'check', 'archive', 'test-unit', 'test-compiler', 'test-package', 'host', 'cache-start', 'cache-report'):
+        for phase in ('deps', 'prepare', 'prepare-tensorflow', 'prepare-model', 'configure', 'build-deps', 'build', 'build-test', 'runtime', 'stage', 'check', 'archive', 'test-unit', 'test-compiler', 'test-package', 'host', 'cache-start', 'cache-report'):
             with self.subTest(phase=phase):
                 events = self.native('--phase', phase)
                 self.assertEqual(events[-1]['args'], [phase])
@@ -127,7 +129,12 @@ with open(os.environ['RECORD'], 'a') as log:
         helper.write_text('initialize() { export PPE42_TEST_ENVIRONMENT=loaded; }\n')
         events = self.native()
         self.assertEqual(events[0]['host_environment'], 'loaded')
-        self.assertEqual(events[-1]['host_environment'], 'loaded')
+        self.assertEqual(events[-2]['host_environment'], 'loaded')
+
+    def test_firmware_failure_prevents_archive_creation(self):
+        events = self.native(extra_env={'FAIL_FIRMWARE': '23'}, expect=23)
+        self.assertEqual([e['kind'] for e in events], ['entry-tests', 'driver', 'firmware'])
+        self.assertFalse(any(e['args'] == ['archive'] for e in events))
 
     def test_failure_stops_before_firmware(self):
         events = self.native(extra_env={'FAIL_CODE': '19'}, expect=19)
