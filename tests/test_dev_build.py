@@ -15,7 +15,8 @@ class DevelopmentBuildTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(prefix='forge dev ')
         self.addCleanup(self.tmp.cleanup)
-        self.root = Path(self.tmp.name)
+        # macOS aliases /var to /private/var; subprocess cwd uses the physical path.
+        self.root = Path(self.tmp.name).resolve()
         self.forge = self.root / 'forge checkout'
         (self.forge / 'scripts').mkdir(parents=True)
         for name in ('dev.sh', 'ci.sh', 'build-llvm.sh'):
