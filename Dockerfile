@@ -1,4 +1,7 @@
-FROM fedora:45
+ARG BASE_IMAGE=fedora:45
+FROM ${BASE_IMAGE}
+ARG HOST_COMPILER=system
+ENV SBE_LLVM_HOST_COMPILER=${HOST_COMPILER}
 
 # This dependency module changes independently of compiler/model build logic.
 COPY llvm-project/utils/ppe42/toolchain-environment.sh /opt/ppe42-source/utils/ppe42/toolchain-environment.sh

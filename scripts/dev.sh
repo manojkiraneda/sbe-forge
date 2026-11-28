@@ -10,6 +10,8 @@ install_dir="${SBE_LLVM_INSTALL_DIR:-${PACKAGE_DIR:-${repo_root}/build/toolchain
 expected_arch="${SBE_LLVM_EXPECTED_ARCH:-}"
 engine=docker
 image=sbe-forge-dev:latest
+base_image="${SBE_LLVM_BASE_IMAGE:-fedora:45}"
+host_compiler="${SBE_LLVM_HOST_COMPILER:-system}"
 cmake_args=()
 cmake_arg_count=0
 usage() {
@@ -28,6 +30,8 @@ Usage: scripts/dev.sh [options] [-- CMake arguments]
   --install-dir DIR        Staged toolchain consumed by firmware tests
   --engine COMMAND         Container engine (default: docker)
   --image NAME             Development image name
+  --base-image IMAGE       Container base (default: fedora:45)
+  --host-compiler NAME     Compiler building LLVM: system (default), clang, gcc
   -h, --help               Show this help
 
 The all phase builds the compiler, runs the same compiler/package regressions
@@ -41,7 +45,7 @@ while (( $# )); do
   case "$1" in
     --native) mode=native; shift;;
     --container) mode=container; shift;;
-    --phase|--llvm-source|--build-dir|--install-dir|--engine|--image|--expect-arch)
+    --phase|--llvm-source|--build-dir|--install-dir|--engine|--image|--expect-arch|--base-image|--host-compiler)
       if (( $# < 2 )) || [[ -z "$2" ]]; then echo "Missing value for $1" >&2; exit 2; fi
       case "$1" in
         --phase) phase="$2";;
@@ -51,6 +55,8 @@ while (( $# )); do
         --install-dir) install_dir="$2";;
         --engine) engine="$2";;
         --image) image="$2";;
+        --base-image) base_image="$2";;
+        --host-compiler) host_compiler="$2";;
       esac
       shift 2;;
     --) shift; cmake_arg_count=$#; cmake_args=("$@"); break;;
@@ -58,6 +64,11 @@ while (( $# )); do
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2;;
   esac
 done
+case "$host_compiler" in
+  system|clang|gcc) ;;
+  *) echo "Unknown host compiler: $host_compiler (use system, clang or gcc)" >&2; exit 2;;
+esac
+export SBE_LLVM_HOST_COMPILER="$host_compiler"
 case "$phase" in
   all|deps|prepare|prepare-tensorflow|prepare-model|configure|build-deps|build|build-test|runtime|stage|check|archive|firmware|fetch|test|test-entrypoint|test-unit|test-compiler|test-package|host|cache-start|cache-report) ;;
   *) echo "Unknown phase: $phase" >&2; exit 2;;
@@ -143,7 +154,8 @@ trap 'rm -rf -- "$context"' EXIT
 mkdir -p "$context/llvm-project/utils/ppe42" "$build_dir" "$install_dir"
 cp "$driver" "$context/llvm-project/utils/ppe42/build-toolchain.sh"
 cp "$source_dir/utils/ppe42/toolchain-environment.sh" "$context/llvm-project/utils/ppe42/toolchain-environment.sh"
-"$engine" build --file "$repo_root/Dockerfile" --tag "$image" "$context"
+"$engine" build --file "$repo_root/Dockerfile" --tag "$image" --build-arg "BASE_IMAGE=$base_image" \
+  --build-arg "HOST_COMPILER=$host_compiler" "$context"
 # Preserve /workspace for existing local CMake build trees. External CI paths
 # are mounted unchanged, allowing the packaged candidate to be checked as-is.
 container_path() {
@@ -170,6 +182,6 @@ if [[ -n "${SBE_LLVM_DEPS_DIR:-}" ]]; then
   container_args+=(--volume "$deps_dir:$deps_dir:Z" --env "SBE_LLVM_DEPS_DIR=$deps_dir")
 fi
 "$engine" run "${container_args[@]}" "$image" "/workspace/scripts/dev.sh" \
-  --native --phase "$phase" --llvm-source "$(container_path "$source_dir")" \
+  --native --host-compiler "$host_compiler" --phase "$phase" --llvm-source "$(container_path "$source_dir")" \
   --build-dir "$(container_path "$build_dir")" --install-dir "$(container_path "$install_dir")" \
   -- ${cmake_args[@]+"${cmake_args[@]}"}
