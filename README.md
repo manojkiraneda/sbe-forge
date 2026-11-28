@@ -106,3 +106,16 @@ workflow.
 
 See [coredump/README.md](coredump/README.md) for capturing Odyssey SPPE cores
 from Simics and inspecting PK threads with LLDB.
+
+Select the container base and the compiler used to build the toolchain with:
+
+```sh
+./scripts/dev.sh --container --base-image fedora:45 --host-compiler clang
+```
+
+`--host-compiler` also accepts `gcc` or `system` (the default), and works with
+`--native`. It selects the host compiler, not the PPE42 target compiler. The
+base image must support the shared dependency installer (Fedora or Ubuntu/Debian)
+and provide Python 3.11. Use a separate `--build-dir` when changing compilers.
+The corresponding environment overrides are `SBE_LLVM_BASE_IMAGE` and
+`SBE_LLVM_HOST_COMPILER`.
